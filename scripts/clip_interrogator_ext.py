@@ -186,16 +186,17 @@ def analyze_tab():
 
 def batch_tab():
     def batch_process(folder, clip_model, mode, output_mode):
-        if not os.path.exists(folder):
-            print(f"Folder {folder} does not exist")
-            return
-        if not os.path.isdir(folder):
-            print("{folder} is not a directory")
-            return
+        if folder.endswith("*"):
+            folder = folder[:-1]
 
-        files = [f for f in os.listdir(folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        files = []
+        for root, _, filenames in os.walk(folder):
+            for filename in filenames:
+                if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    files.append(os.path.join(root, filename))
+
         if not files:
-            print("Folder has no images")
+            print("Found no accessible images")
             return
 
         shared.state.begin()
@@ -218,7 +219,7 @@ def batch_tab():
                 try:
                     if shared.state.interrupted:
                         break
-                    image = Image.open(os.path.join(folder, file)).convert('RGB')
+                    image = Image.open(file).convert('RGB')
                     caption = ci.generate_caption(image)
                 except OSError as e:
                     print(f"{e}; continuing")
@@ -235,7 +236,7 @@ def batch_tab():
                 try:
                     if shared.state.interrupted:
                         break
-                    image = Image.open(os.path.join(folder, file)).convert('RGB')
+                    image = Image.open(file).convert('RGB')
                     prompt = interrogate(image, mode, caption=captions[idx])
                     writer.add(file, prompt)
                 except OSError as e:
@@ -255,7 +256,7 @@ def batch_tab():
 
     with gr.Column():
         with gr.Row():
-            folder = gr.Text(label="Images folder", value="", interactive=True)
+            folder = gr.Text(label="Images folder", value="", interactive=True, placeholder="To recursively collect images from folders, use a wildcard (*) at the end of destination. ie. path/to/folders/*")
         with gr.Row():
             clip_model = gr.Dropdown(get_models(), value='ViT-L-14/openai', label='CLIP Model')
             mode = gr.Radio(['caption', 'best', 'fast', 'classic', 'negative'], label='Prompt Mode', value='fast')
