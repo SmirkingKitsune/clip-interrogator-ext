@@ -374,6 +374,9 @@ def mount_interrogator_api(_: gr.Blocks, app: FastAPI):
             "flavor": flavor_ranks,
         }
 
+    @app.post("/interrogator/unload")
+    async def unload_models():
+        unload()
 
 script_callbacks.on_app_started(mount_interrogator_api)
 script_callbacks.on_ui_tabs(add_tab)
